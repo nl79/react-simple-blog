@@ -1,9 +1,26 @@
 import React, {Component, PropTypes} from 'react';
 import {connect} from 'react-redux';
 import { reduxForm } from 'redux-form';
+import _ from 'lodash';
 
 import { createPost } from '../actions/index';
 import { Link, browserHistory } from 'react-router';
+
+
+const FIELDS = {
+  'title': {
+    type: 'input',
+    label: 'Title For Post'
+  },
+  'categories': {
+    type: 'input',
+    label: 'Enter some categories'
+  },
+  'content': {
+    type: 'textarea',
+    label: 'Post Contents'
+  }
+};
 
 class PostsNew extends Component {
   static contextTypes = {
@@ -22,47 +39,33 @@ class PostsNew extends Component {
       browserHistory.push('/');
     });
   }
-  render() {
-    const {
-      fields: { title, categories, content},
-      handleSubmit
-    } = this.props;
 
+  renderField(fieldConfig, field) {
+    const fieldHelper = this.props.fields[field];
+    return (
+      <div className={`form-group ${fieldHelper.touched && fieldHelper.invalid ? 'has-danger' : ''}`}>
+        <label>{fieldConfig.label}</label>
+        <fieldConfig.type type='text' className='form-control' {...fieldHelper}/>
+
+        <div className='text-help'>
+          {
+            // Check that the title property has been 'touched' and
+            // only display the error if the user touched the field
+            // and an error exists for the field.
+            // The touched property would be set if the user submits
+            fieldHelper.touched && fieldHelper.error
+          }
+        </div>
+      </div>
+    )
+  }
+  render() {
+    const { handleSubmit } = this.props;
     return (
       <form onSubmit={ handleSubmit(this.onSubmit.bind(this)) }>
         <h3>Create A New Post</h3>
 
-        <div className={`form-group ${title.touched && title.invalid ? 'has-danger' : ''}`}>
-          <label>Title</label>
-          <input type='text' className='form-control' {...title}/>
-          <div className='text-help'>
-            {
-              // Check that the title property has been 'touched' and
-              // only display the error if the user touched the field
-              // and an error exists for the field.
-              // The touched property would be set if the user submits
-              title.touched && title.error
-            }
-          </div>
-        </div>
-        <div className={`form-group ${categories.touched && categories.invalid ? 'has-danger' : ''}`}>
-          <label>Categories</label>
-          <input type='text' className='form-control' {...categories}/>
-          <div className='text-help'>
-            {
-              categories.touched && categories.error
-            }
-          </div>
-        </div>
-        <div className={`form-group ${content.touched && content.invalid ? 'has-danger' : ''}`}>
-          <label>Content</label>
-          <textarea className='form-control' {...content} />
-          <div className='text-help'>
-            {
-              content.touched && content.error
-            }
-          </div>
-        </div>
+        {_.map(FIELDS, this.renderField.bind(this))}
 
         <button type='submit' className='btn btn-primary'>Submit</button>
         <Link to='/' className='btn btn-danger'>Cancel</Link>
@@ -77,16 +80,11 @@ class PostsNew extends Component {
 function validate(values) {
   const errors = {};
 
-  if(!values.title) {
-    errors.title = 'Enter a Title';
-  }
-  if(!values.categories) {
-    errors.categories = 'Enter a Categories';
-  }
-  if(!values.content) {
-    errors.content = 'Enter a Content';
-  }
-
+  _.each(FIELDS, (type, field) => {
+    if(!values[field]) {
+      errors[field] = `Enter a ${field}`;
+    }
+  });
   // If there are any truthy values assocciated with a key(field name), then it means there is an error.
   return errors;
 }
@@ -96,6 +94,6 @@ function validate(values) {
 
 export default reduxForm({
   form: 'PostsNewForm',
-  fields: ['title', 'categories', 'content'],
+  fields: Object.keys(FIELDS),
   validate: validate
 }, null, { createPost })(PostsNew);
